@@ -8,6 +8,9 @@ __pycache__/
 .env
 *.env
 
+# Large model files (download separately)
+trained/
+
 # IDE
 .vscode/
 .idea/
