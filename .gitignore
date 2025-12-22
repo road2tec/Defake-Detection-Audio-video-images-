@@ -10,6 +10,8 @@ __pycache__/
 
 # Large model files (download separately)
 trained/
+backend/*.h5
+backend/*.pth
 
 # IDE
 .vscode/
