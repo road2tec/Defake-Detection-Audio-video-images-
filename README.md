@@ -28,10 +28,25 @@ A full-stack web application for detecting AI-generated and manipulated media (i
 │   │   └── components/    # Reusable UI components
 │   └── package.json
 │
-└── trained/                # Pre-trained model weights
+└── trained/                # Pre-trained model weights (Download separately)
     ├── ffpp_c23.pth       # Xception model (Video - FaceForensics++)
     ├── audio_classifier.h5 # Audio detection model (TensorFlow)
     └── novelty.h5          # Image detection model (TensorFlow CNN)
+```
+
+## 📥 Download Pre-trained Models
+
+**⚠️ Important:** The trained models are not included in this repository due to size limitations.
+
+**Download from Google Drive:**
+🔗 **[Download Trained Models](https://drive.google.com/drive/folders/1FpDA8NIssH3QjGoBTC9EorekVM9dp9pZ?usp=drive_link)**
+
+After downloading, place the files in the `trained/` folder:
+```
+trained/
+├── ffpp_c23.pth        # Video detection (Xception)
+├── audio_classifier.h5  # Audio detection
+└── novelty.h5          # Image detection
 ```
 
 ## 🚀 Quick Start
