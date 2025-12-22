@@ -1,0 +1,11 @@
+fastapi
+uvicorn
+pymongo
+python-multipart
+numpy
+requests
+torch
+torchvision
+torchaudio
+librosa
+soundfile
