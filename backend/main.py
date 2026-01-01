@@ -160,12 +160,9 @@ def predict_file(file: UploadFile = File(...)):
     except Exception as e:
         print(f"Prediction Error: {e}")
         return {"error": "prediction_failed", "detail": str(e)}
-    finally:
-        if os.path.exists(temp_filename):
-            try:
-                os.remove(temp_filename)
-            except:
-                pass
+    # Process cleanup
+    if os.path.exists(temp_filename):
+        os.remove(temp_filename)
     
     return {
         "filename": filename,

@@ -9,3 +9,5 @@ torchvision
 torchaudio
 librosa
 soundfile
+python-dotenv
+tensorflow
