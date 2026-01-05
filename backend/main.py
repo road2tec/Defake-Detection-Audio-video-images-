@@ -1,6 +1,12 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, File, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
-from database import connect_db
+from typing import Optional
+from pydantic import BaseModel
+from database import connect_db, get_db, close_db
+import datetime
+import random
+import numpy as np
+from audio_utils import load_audio_model, preprocess_audio
 
 app = FastAPI()
 app.add_middleware(
@@ -11,20 +17,59 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+class User(BaseModel):
+    name: str
+    email: str
+    password: str
 
+class LoginRequest(BaseModel):
+    email: str
+    password: str
 
-@app.get("/")
-def read_root():
-    return {"message": "Image/Audio Detection Backend Running"}
+# Use the existing get_db helper to interact with collections
+db = get_db()
+users_col = db["users"]
+history_col = db["history"]
 
-from fastapi import File, UploadFile
-import random
-from audio_utils import load_audio_model, preprocess_audio
-import numpy as np
-from typing import Optional
+@app.post("/register")
+async def register(user: User):
+    if users_col.find_one({"email": user.email}):
+        return {"error": "User already exists"}
+    
+    users_col.insert_one(user.dict())
+    return {"message": "User registered successfully"}
+
+@app.post("/login")
+async def login(req: LoginRequest):
+    user = users_col.find_one({"email": req.email, "password": req.password})
+    if not user:
+        return {"error": "Invalid credentials"}
+    
+    return {
+        "message": "Login successful",
+        "user": {
+            "name": user["name"],
+            "email": user["email"]
+        }
+    }
+
+@app.get("/history/{email}")
+async def get_history(email: str):
+    history = list(history_col.find({"user_email": email}).sort("timestamp", -1))
+    # Convert ObjectId to string for JSON serialization
+    for item in history:
+        item["_id"] = str(item["_id"])
+    return {"history": history}
+
+# Existing models and setup...
 
 # Hold loaded models in app.state for reuse between requests
 app.state.audio_model = None
+
+@app.on_event("shutdown")
+async def shutdown_event():
+    print("Shutting down...")
+    close_db()
 
 @app.on_event("startup")
 async def startup_event():
@@ -46,7 +91,7 @@ async def startup_event():
         print(f"Error preloading audio model: {e}")
 
 @app.post("/predict")
-def predict_file(file: UploadFile = File(...)):
+def predict_file(file: UploadFile = File(...), user_email: Optional[str] = None):
     filename = file.filename
     content_type = file.content_type
     print(f"DEBUG: Filename={filename}, Content-Type={content_type}")
@@ -164,9 +209,23 @@ def predict_file(file: UploadFile = File(...)):
     if os.path.exists(temp_filename):
         os.remove(temp_filename)
     
-    return {
+    result_data = {
         "filename": filename,
         "label": label,
         "confidence": confidence,
-        "content_type": content_type
+        "content_type": content_type,
+        "timestamp": datetime.datetime.utcnow().isoformat()
     }
+
+    # Save to history if user is logged in
+    if user_email:
+        try:
+            history_col.insert_one({
+                "user_email": user_email,
+                **result_data
+            })
+            print(f"Saved history for {user_email}")
+        except Exception as e:
+            print(f"Error saving history: {e}")
+
+    return result_data

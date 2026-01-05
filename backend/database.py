@@ -23,3 +23,9 @@ def get_db():
     if db is None:
         connect_db()
     return db
+
+def close_db():
+    global client
+    if client:
+        client.close()
+        print("MongoDB connection closed.")

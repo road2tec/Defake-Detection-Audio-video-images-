@@ -7,12 +7,28 @@ const Login = () => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
 
-    const handleLogin = (e) => {
+    const handleLogin = async (e) => {
         e.preventDefault();
-        // Simulate login logic
-        console.log("Logging in with:", email, password);
-        // In a real app, you'd validate and maybe store a token
-        navigate('/dashboard');
+        try {
+            const response = await fetch('http://127.0.0.1:8080/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email, password })
+            });
+
+            const data = await response.json();
+            if (data.error) {
+                alert(data.error);
+                return;
+            }
+
+            console.log("Login successful:", data.user);
+            localStorage.setItem('user', JSON.stringify(data.user));
+            navigate('/dashboard');
+        } catch (error) {
+            console.error("Login error:", error);
+            alert("Connection error. Is backend running?");
+        }
     };
 
     return (

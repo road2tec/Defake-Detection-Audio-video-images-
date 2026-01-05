@@ -8,11 +8,28 @@ const Signup = () => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
 
-    const handleSignup = (e) => {
+    const handleSignup = async (e) => {
         e.preventDefault();
-        // Simulate signup logic
-        console.log("Signing up with:", name, email, password);
-        navigate('/dashboard');
+        try {
+            const response = await fetch('http://127.0.0.1:8080/register', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name, email, password })
+            });
+
+            const data = await response.json();
+            if (data.error) {
+                alert(data.error);
+                return;
+            }
+
+            console.log("Signup successful:", data.message);
+            alert("Account created successfully! Please login.");
+            navigate('/login');
+        } catch (error) {
+            console.error("Signup error:", error);
+            alert("Connection error. Is backend running?");
+        }
     };
 
     return (
