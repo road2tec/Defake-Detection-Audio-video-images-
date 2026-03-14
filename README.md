@@ -95,7 +95,7 @@ npm run dev
 - **Backend API**: http://localhost:8080
 
 ## 🧠 Models Used
-
+ 
 ### Video Detection
 - **Architecture**: Xception Neural Network
 - **Training Data**: FaceForensics++ Dataset (c23 compression)
