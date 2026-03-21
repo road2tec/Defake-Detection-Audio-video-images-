@@ -74,7 +74,7 @@ pip install -r requirements.txt
 echo "MONGO_URI=your_mongodb_connection_string" > .env
 
 # Run server
-uvicorn main:app --reload --port 8080
+python -m uvicorn main:app --reload --port 8080
 ```
 
 ### Frontend Setup

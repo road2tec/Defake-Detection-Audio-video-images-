@@ -160,30 +160,38 @@ def predict_file(file: UploadFile = File(...), user_email: Optional[str] = None)
              # Image Prediction Logic
              print("Processing Image...")
              print("Processing Image...")
-             from image_utils import load_image_model, preprocess_image
-             model = load_image_model()
+             from image_utils import load_image_model, preprocess_image, check_ai_watermark
              
-             if model:
-                 print("Image Model loaded. Preprocessing...")
-                 img_tensor = preprocess_image(temp_filename)
-                 if img_tensor is not None:
-                     print(f"Image processed: {img_tensor.shape}. Predicting...")
-                     pred = model.predict(img_tensor)
-                     print(f"Prediction raw: {pred}")
-                     
-                     # Assume binary sigmoid output [0=Fake, 1=Real] or similar
-                     score = float(pred[0][0]) if pred.shape[-1] == 1 else float(pred[0][1])
-                     
-                     confidence = score if score > 0.5 else 1 - score
-                     label = "REAL" if score > 0.5 else "FAKE"
-                     print(f"Result: {label} ({confidence})")
-                 else:
-                     return {"error": "Could not process image"}
+             # 1. First check for AI watermarks (Gemini/Google)
+             is_ai, water_conf, reason = check_ai_watermark(temp_filename)
+             if is_ai:
+                 print(f"Watermark Detection: {reason}")
+                 label = "FAKE"
+                 confidence = water_conf
              else:
-                 print("Image model refused to load.")
-                 # Fallback
-                 label = random.choice(["REAL", "FAKE"])
-                 confidence = random.uniform(0.75, 0.99)
+                 # 2. Falling back to ML model if no metadata watermark found
+                 model = load_image_model()
+                 if model:
+                     print("Image Model loaded. Preprocessing...")
+                     img_tensor = preprocess_image(temp_filename)
+                     if img_tensor is not None:
+                         print(f"Image processed: {img_tensor.shape}. Predicting...")
+                         pred = model.predict(img_tensor)
+                         print(f"Prediction raw: {pred}")
+                         
+                         # Assume binary sigmoid output [0=Fake, 1=Real] or similar
+                         score = float(pred[0][0]) if pred.shape[-1] == 1 else float(pred[0][1])
+                         confidence = score if score > 0.5 else 1 - score
+                         label = "REAL" if score > 0.5 else "FAKE"
+                         print(f"Result: {label} ({confidence})")
+                     else:
+                         return {"error": "Could not process image"}
+                 else:
+                     print("Image model refused to load.")
+                     # Generic fallback if model fails
+                     label = random.choice(["REAL", "FAKE"])
+                     confidence = random.uniform(0.75, 0.99)
+
         
         elif content_type.startswith("video/"):
              # Video Prediction - Hybrid Detection (Xception + Heuristics)
