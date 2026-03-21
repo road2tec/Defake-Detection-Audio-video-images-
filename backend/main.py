@@ -7,6 +7,7 @@ import datetime
 import random
 import numpy as np
 from audio_utils import load_audio_model, preprocess_audio
+from bson import ObjectId
 
 app = FastAPI()
 app.add_middleware(
@@ -60,6 +61,24 @@ async def get_history(email: str):
     for item in history:
         item["_id"] = str(item["_id"])
     return {"history": history}
+
+@app.delete("/history/{item_id}")
+async def delete_history_item(item_id: str):
+    try:
+        result = history_col.delete_one({"_id": ObjectId(item_id)})
+        if result.deleted_count == 0:
+            return {"error": "Item not found"}
+        return {"message": "Item deleted successfully"}
+    except Exception as e:
+        return {"error": str(e)}
+
+@app.delete("/history/clear/{email}")
+async def clear_history(email: str):
+    try:
+        result = history_col.delete_many({"user_email": email})
+        return {"message": f"Deleted {result.deleted_count} items"}
+    except Exception as e:
+        return {"error": str(e)}
 
 # Existing models and setup...
 

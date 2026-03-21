@@ -100,6 +100,39 @@ const Dashboard = () => {
 
     const [predictionType, setPredictionType] = useState('audio'); // Default to audio as model is integrated
 
+    const handleDeleteHistory = async (id) => {
+        if (!window.confirm("Are you sure you want to delete this record?")) return;
+        try {
+            const response = await fetch(`http://127.0.0.1:8080/history/${id}`, {
+                method: 'DELETE'
+            });
+            if (response.ok) {
+                // Update local state to remove the item instantly
+                setHistory(prev => prev.filter(item => item._id !== id));
+            } else {
+                alert("Failed to delete history item.");
+            }
+        } catch (error) {
+            console.error("Error deleting history:", error);
+        }
+    };
+
+    const handleClearHistory = async () => {
+        if (!window.confirm("Are you sure you want to CLEAR ALL history? This cannot be undone.")) return;
+        try {
+            const response = await fetch(`http://127.0.0.1:8080/history/clear/${user.email}`, {
+                method: 'DELETE'
+            });
+            if (response.ok) {
+                setHistory([]);
+            } else {
+                alert("Failed to clear history.");
+            }
+        } catch (error) {
+            console.error("Error clearing history:", error);
+        }
+    };
+
     return (
         <div style={{ minHeight: '100vh', paddingTop: '100px', position: 'relative' }}>
             <BackgroundAnimation />
@@ -230,7 +263,29 @@ const Dashboard = () => {
                         animate={{ opacity: 1 }}
                         style={{ marginTop: '4rem', textAlign: 'left', width: '100%' }}
                     >
-                        <h2 style={{ marginBottom: '1.5rem', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '0.5rem' }}>Your Analysis History</h2>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '0.5rem' }}>
+                            <h2 style={{ margin: 0 }}>Your Analysis History</h2>
+                            {history.length > 0 && (
+                                <button
+                                    onClick={handleClearHistory}
+                                    style={{
+                                        background: 'transparent',
+                                        color: '#ef4444',
+                                        border: '1px solid #ef4444',
+                                        padding: '0.4rem 1rem',
+                                        borderRadius: '0.5rem',
+                                        cursor: 'pointer',
+                                        fontSize: '0.8rem',
+                                        fontWeight: 600,
+                                        transition: '0.3s'
+                                    }}
+                                    onMouseOver={(e) => { e.target.style.background = '#ef4444'; e.target.style.color = 'white'; }}
+                                    onMouseOut={(e) => { e.target.style.background = 'transparent'; e.target.style.color = '#ef4444'; }}
+                                >
+                                    Clear All
+                                </button>
+                            )}
+                        </div>
                         {loadingHistory ? (
                             <p>Loading your history...</p>
                         ) : history.length > 0 ? (
@@ -259,6 +314,26 @@ const Dashboard = () => {
                                         <div style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>
                                             {(item.confidence * 100).toFixed(1)}% Confidence
                                         </div>
+                                        
+                                        <button
+                                            onClick={() => handleDeleteHistory(item._id)}
+                                            style={{
+                                                position: 'absolute',
+                                                top: '1rem',
+                                                right: '1rem',
+                                                background: 'transparent',
+                                                border: 'none',
+                                                color: 'rgba(255,255,255,0.2)',
+                                                cursor: 'pointer',
+                                                fontSize: '1.2rem',
+                                                transition: '0.3s'
+                                            }}
+                                            onMouseOver={(e) => e.target.style.color = '#ef4444'}
+                                            onMouseOut={(e) => e.target.style.color = 'rgba(255,255,255,0.2)'}
+                                            title="Delete Record"
+                                        >
+                                            <i className="fas fa-trash"></i> 🗑️
+                                        </button>
                                     </div>
                                 ))}
                             </div>
