@@ -142,23 +142,24 @@ def predict_file(file: UploadFile = File(...), user_email: Optional[str] = None)
                 model = load_audio_model()
                 app.state.audio_model = model
             if model:
-                features = preprocess_audio(temp_filename)
-                if features is not None:
-                    # TensorFlow Inference
-                    # Predict returns probabilities directly (if softmax activation)
+                segments = preprocess_audio(temp_filename)
+                if segments:
+                    # Batch prediction for efficiency
+                    batch = np.vstack(segments)
+                    print(f"Analyzing {len(segments)} audio segments (Batch shape: {batch.shape})...")
+                    
                     try:
-                        probs = model.predict(features, verbose=0) # [1, 2]
+                        probs = model.predict(batch, verbose=0) # [N, 2]
+                        # Average probabilities across all segments
+                        avg_probs = np.mean(probs, axis=0)
                     except Exception as e:
                          print(f"Model prediction error: {e}")
                          raise e
 
-                    print(f"RAW PREDICTION (Probs): {probs}")
+                    print(f"AVERAGE PREDICTION (Probs): {avg_probs}")
                     
-                    # Based on audio_classifier.h5 tests:
-                    # Noise (Fake-like) -> Class 0 (0.96)
-                    # Therefore: Class 0 = FAKE, Class 1 = REAL
-                    fake_prob = float(probs[0][0])
-                    real_prob = float(probs[0][1])
+                    fake_prob = float(avg_probs[0])
+                    real_prob = float(avg_probs[1])
                     
                     if real_prob > fake_prob:
                         label = "REAL"

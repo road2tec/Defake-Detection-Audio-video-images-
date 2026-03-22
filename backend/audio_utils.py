@@ -40,35 +40,59 @@ def load_audio_model(model_path=MODEL_PATH):
                 return None
     return _model
 
-def preprocess_audio(file_path):
+def preprocess_audio(file_path, max_segments=10):
     """
-    Load audio -> Mel Spectrogram (DB) -> Resize/Pad to 109 -> Shape (1, 128, 109, 1)
+    Load audio -> Split into segments of 3s -> For each: Mel Spectrogram (DB) -> Resize/Pad to 109 -> Shape (1, 128, 109, 1)
+    Returns a list of tensors for all segments.
     """
     try:
-        # 1. Load Audio
-        y, sr = librosa.load(file_path, duration=3.0) # Model expects ~3s? 
-        # Note: test_tf used default load which is 22050 usually.
-        # test_tf showed 'Input Shape: (None, 128, 109, 1)' and worked.
-        # We will use default librosa load (22050) as evidenced by the working test.
+        # 1. Load entire Audio (or up to 5 mins if supported)
+        y, sr = librosa.load(file_path, duration=300.0) # Up to 5 mins
         
-        # 2. To Mel Spectrogram
-        mel_spec = librosa.feature.melspectrogram(y=y, sr=sr, n_mels=128)
-        mel_db = librosa.power_to_db(mel_spec, ref=np.max)
+        duration = librosa.get_duration(y=y, sr=sr)
+        segment_len = 3.0 # seconds
         
-        # 3. Shape handling (128, 109)
-        target_width = 109
-        if mel_db.shape[1] < target_width:
-             padding = target_width - mel_db.shape[1]
-             mel_db = np.pad(mel_db, ((0, 0), (0, padding)), mode='constant')
-        else:
-             mel_db = mel_db[:, :target_width]
-             
-        # 4. Add Channel and Batch Dimensions
-        # (128, 109) -> (1, 128, 109, 1)
-        mel_in = mel_db[np.newaxis, ..., np.newaxis]
+        segments = []
         
-        return mel_in
+        # Calculate start points for segments (limit to max_segments for speed)
+        # We can take samples at equal intervals
+        num_possible_segments = int(duration // segment_len)
+        if num_possible_segments <= 0:
+            num_possible_segments = 1
+            
+        step = max(1, num_possible_segments // max_segments)
+        
+        for i in range(0, num_possible_segments, step):
+            start = i * int(segment_len * sr)
+            end = (i + 1) * int(segment_len * sr)
+            
+            if start >= len(y):
+                break
+                
+            y_segment = y[start:min(end, len(y))]
+            
+            # Mel Spectrogram
+            mel_spec = librosa.feature.melspectrogram(y=y_segment, sr=sr, n_mels=128)
+            mel_db = librosa.power_to_db(mel_spec, ref=np.max)
+            
+            # Shape handling (128, 109)
+            target_width = 109
+            if mel_db.shape[1] < target_width:
+                 padding = target_width - mel_db.shape[1]
+                 mel_db = np.pad(mel_db, ((0, 0), (0, padding)), mode='constant')
+            else:
+                 mel_db = mel_db[:, :target_width]
+                 
+            # Add dimensions
+            mel_in = mel_db[np.newaxis, ..., np.newaxis]
+            segments.append(mel_in)
+            
+            if len(segments) >= max_segments:
+                break
+                
+        return segments # Return list of processed segment tensors
         
     except Exception as e:
         print(f"Error preprocessing audio: {e}")
         return None
+
