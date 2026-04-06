@@ -30,11 +30,22 @@ def load_image_model(model_path=None):
             
             print(f"DEBUG: Loading IMAGE model strictly from: {model_path}")
             _image_model = tf.keras.models.load_model(model_path)
+            
+            # CRITICAL SAFETY CHECK: Verify input shape
+            input_shape = _image_model.input_shape
+            print(f"MODEL VERIFICATION: Input Shape = {input_shape}")
+            
+            if len(input_shape) == 4 and input_shape[1] == 128:
+                 print("CRITICAL WARNING: The file novelty.h5 appears to be an AUDIO model, not an IMAGE model!")
+                 _image_model = None
+                 return None
+                 
             print(f"SUCCESS: Image model successfully loaded from: {model_path}")
         except Exception as e:
             print(f"CRITICAL ERROR loading image model: {e}")
             return None
     return _image_model
+
 
 
 
