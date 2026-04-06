@@ -8,10 +8,11 @@ __pycache__/
 .env
 *.env
 
-# Large model files (download separately)
-trained/
+# Large model files (allow images)
+# trained/
 backend/*.h5
 backend/*.pth
+
 
 # IDE
 .vscode/
