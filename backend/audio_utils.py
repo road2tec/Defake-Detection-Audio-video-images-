@@ -4,7 +4,7 @@ import numpy as np
 import os
 import threading
 
-_model = None
+_audio_model = None
 _model_lock = threading.Lock()
 
 # Use the verified working model
@@ -12,33 +12,34 @@ MODEL_PATH = r"v:\Road2Tech\Project_3\Image and Audio Real or Fake Detection Sys
 ALT_MODEL_PATH = os.path.join(os.path.dirname(__file__), "..", "trained", "audio_classifier.h5")
 
 def load_audio_model(model_path=MODEL_PATH):
-    global _model
+    global _audio_model
     with _model_lock:
-        if _model is None:
+        if _audio_model is None:
             try:
                 if not os.path.exists(model_path):
                     alt = os.path.abspath(ALT_MODEL_PATH)
-                    print(f"Model file not found at {model_path}, trying {alt}...")
+                    print(f"DEBUG: Audio Model file not found at {model_path}, trying {alt}...")
                     if os.path.exists(alt):
                         model_path = alt
                     else:
-                        raise FileNotFoundError(f"Model file not found at {model_path} or {alt}")
+                        raise FileNotFoundError(f"Audio Model file not found at {model_path} or {alt}")
 
-                print(f"Loading TensorFlow model from {model_path}...")
-                _model = tf.keras.models.load_model(model_path)
-                print("Audio model (TensorFlow) loaded.")
+                print(f"DEBUG: Loading AUDIO model strictly from {model_path}...")
+                _audio_model = tf.keras.models.load_model(model_path)
+                print("SUCCESS: Audio model (TensorFlow) loaded.")
                 
                 # Warmup
                 try:
                     dummy_in = np.zeros((1, 128, 109, 1))
-                    _model.predict(dummy_in, verbose=0)
+                    _audio_model.predict(dummy_in, verbose=0)
                 except Exception as e:
-                    print(f"Warmup failed: {e}")
+                    print(f"Audio Warmup failed (minor): {e}")
                     
             except Exception as e:
-                print(f"Error loading audio model: {e}")
+                print(f"CRITICAL ERROR loading audio model: {e}")
                 return None
-    return _model
+    return _audio_model
+
 
 def preprocess_audio(file_path, max_segments=10):
     """

@@ -7,14 +7,13 @@ import piexif
 # Suppress TF logs
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
-_model = None
+_image_model = None
 
 def load_image_model(model_path=None):
-    global _model
-    if _model is None:
+    global _image_model
+    if _image_model is None:
         try:
             # Dynamically find the project root and trained folder
-            # __file__ is backend/image_utils.py, so go up one level to get project root
             base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
             if model_path is None:
                 model_path = os.path.join(base_dir, 'trained', 'novelty.h5')
@@ -26,14 +25,17 @@ def load_image_model(model_path=None):
                 elif os.path.exists('../trained/novelty.h5'):
                     model_path = '../trained/novelty.h5'
                 else:
-                    print(f"ERROR: Model file not found at {model_path}")
+                    print(f"ERROR: Image Model file not found at {model_path}")
                     return None
             
-            _model = tf.keras.models.load_model(model_path)
-            print(f"Image model successfully loaded from: {model_path}")
+            print(f"DEBUG: Loading IMAGE model strictly from: {model_path}")
+            _image_model = tf.keras.models.load_model(model_path)
+            print(f"SUCCESS: Image model successfully loaded from: {model_path}")
         except Exception as e:
-            print(f"Error loading image model: {e}")
-    return _model
+            print(f"CRITICAL ERROR loading image model: {e}")
+            return None
+    return _image_model
+
 
 
 
