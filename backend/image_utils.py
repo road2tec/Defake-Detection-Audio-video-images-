@@ -9,52 +9,63 @@ os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
 _model = None
 
-def load_image_model(model_path='backend/novelty.h5'):
+def load_image_model(model_path='../trained/novelty.h5'):
     global _model
     if _model is None:
         try:
+            # Check current dir, then parent's trained dir
             if not os.path.exists(model_path):
-                if os.path.exists('novelty.h5'):
-                    model_path = 'novelty.h5'
+                if os.path.exists('trained/novelty.h5'):
+                    model_path = 'trained/novelty.h5'
+                elif os.path.exists('../trained/novelty.h5'):
+                    model_path = '../trained/novelty.h5'
                 else:
+                    print(f"ERROR: Model file not found at {model_path}")
                     return None
             _model = tf.keras.models.load_model(model_path)
-            print("Image model loaded.")
+            print(f"Image model loaded from {model_path}")
         except Exception as e:
             print(f"Error loading image model: {e}")
     return _model
 
+
 def check_ai_watermark(image_path):
     """
-    Check for Gemini/Google AI watermarks in metadata or via visual heuristics.
+    Check for Gemini/Google AI watermarks in metadata or common AI markers.
     Returns (is_fake, confidence, reason)
     """
     try:
         img = Image.open(image_path)
         
-        # 1. Check Metadata (SynthID often leaves specific markers or IPTC tags)
-        # Google AI generated images often contain 'Generated with AI' or specific IPTC DigitalSourceType
-        metadata_found = False
+        # Comprehensive list of AI-related keywords to flag
+        ai_keywords = ["google", "gemini", "synthetic", "ai-generated", "dall-e", "midjourney", "stable diffusion", "stablediffusion", "artificial", "adobe firefly", "synthid"]
         
-        # Check for Google/Gemini specific strings in metadata
+        # 1. Search in image info (metadata like EXIF/IPTC)
         info = img.info
         if info:
             metadata_str = str(info).lower()
-            if "google" in metadata_str or "gemini" in metadata_str or "synthetic" in metadata_str or "ai-generated" in metadata_str:
-                return True, 0.99, "AI metadata marker detected"
+            for kw in ai_keywords:
+                if kw in metadata_str:
+                    print(f"AI Metadata Found: {kw}")
+                    return True, 0.99, f"AI watermark ({kw}) detected in metadata"
 
-        # Check IPTC (if available) - Google uses 'trainedAlgorithmicMedia' for SynthID
-        # (This requires more advanced parsing, but simple string search in raw info works often)
-        
-        # 2. Visual Heuristic: Corner Star Check
-        # Gemini often adds a small 4-point star in the bottom right corner.
-        # This is a very basic check for non-black pixels in a specific tiny pattern.
-        # But metadata is more reliable if not stripped.
-        
-        return False, 0.0, "No obvious watermark"
+        # 2. String search in raw file content (binary headers/XMP packets)
+        try:
+            with open(image_path, 'rb') as f:
+                # Read the start and end of the file where XMP/IPTC is usually stored
+                content = f.read(1024 * 50).lower() # First 50KB
+                for kw in ai_keywords:
+                    if kw.encode() in content:
+                        print(f"AI String Found in File Content: {kw}")
+                        return True, 0.99, f"AI-generated trace ({kw}) found in file"
+        except Exception as e:
+            print(f"Raw byte search error: {e}")
+
+        return False, 0.0, "No obvious AI watermark detected"
     except Exception as e:
         print(f"Watermark check error: {e}")
         return False, 0.0, str(e)
+
 
 def preprocess_image(file_path):
     """

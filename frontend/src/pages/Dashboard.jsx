@@ -23,7 +23,7 @@ const Dashboard = () => {
     const fetchHistory = async () => {
         setLoadingHistory(true);
         try {
-            const response = await fetch(`http://127.0.0.1:8080/history/${user.email}`);
+            const response = await fetch(`http://127.0.0.1:8081/history/${user.email}`);
             const data = await response.json();
             setHistory(data.history || []);
         } catch (error) {
@@ -51,7 +51,7 @@ const Dashboard = () => {
         }
 
         try {
-            const url = new URL('http://127.0.0.1:8080/predict');
+            const url = new URL('http://127.0.0.1:8081/predict');
             if (user && user.email) {
                 url.searchParams.append('user_email', user.email);
             }
@@ -91,7 +91,7 @@ const Dashboard = () => {
             setResult({
                 label: "OFFLINE",
                 confidence: 0,
-                errorDetail: "Ensure backend is running on port 8000."
+                errorDetail: "Ensure backend is running on port 8081."
             });
         } finally {
             setAnalyzing(false);
@@ -103,7 +103,7 @@ const Dashboard = () => {
     const handleDeleteHistory = async (id) => {
         if (!window.confirm("Are you sure you want to delete this record?")) return;
         try {
-            const response = await fetch(`http://127.0.0.1:8080/history/${id}`, {
+            const response = await fetch(`http://127.0.0.1:8081/history/${id}`, {
                 method: 'DELETE'
             });
             if (response.ok) {
@@ -120,7 +120,7 @@ const Dashboard = () => {
     const handleClearHistory = async () => {
         if (!window.confirm("Are you sure you want to CLEAR ALL history? This cannot be undone.")) return;
         try {
-            const response = await fetch(`http://127.0.0.1:8080/history/clear/${user.email}`, {
+            const response = await fetch(`http://127.0.0.1:8081/history/clear/${user.email}`, {
                 method: 'DELETE'
             });
             if (response.ok) {

@@ -207,10 +207,8 @@ def predict_file(file: UploadFile = File(...), user_email: Optional[str] = None)
                      else:
                          return {"error": "Could not process image"}
                  else:
-                     print("Image model refused to load.")
-                     # Generic fallback if model fails
-                     label = random.choice(["REAL", "FAKE"])
-                     confidence = random.uniform(0.75, 0.99)
+                    return {"error": "model_load_failed", "detail": "Image detection model failed to load. Check trained/ folder."}
+
 
         
         elif content_type.startswith("video/"):
