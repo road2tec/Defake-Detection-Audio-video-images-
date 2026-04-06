@@ -9,12 +9,18 @@ os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
 _model = None
 
-def load_image_model(model_path='../trained/novelty.h5'):
+def load_image_model(model_path=None):
     global _model
     if _model is None:
         try:
-            # Check current dir, then parent's trained dir
+            # Dynamically find the project root and trained folder
+            # __file__ is backend/image_utils.py, so go up one level to get project root
+            base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+            if model_path is None:
+                model_path = os.path.join(base_dir, 'trained', 'novelty.h5')
+            
             if not os.path.exists(model_path):
+                # Fallback check in current working directory just in case
                 if os.path.exists('trained/novelty.h5'):
                     model_path = 'trained/novelty.h5'
                 elif os.path.exists('../trained/novelty.h5'):
@@ -22,11 +28,13 @@ def load_image_model(model_path='../trained/novelty.h5'):
                 else:
                     print(f"ERROR: Model file not found at {model_path}")
                     return None
+            
             _model = tf.keras.models.load_model(model_path)
-            print(f"Image model loaded from {model_path}")
+            print(f"Image model successfully loaded from: {model_path}")
         except Exception as e:
             print(f"Error loading image model: {e}")
     return _model
+
 
 
 def check_ai_watermark(image_path):
