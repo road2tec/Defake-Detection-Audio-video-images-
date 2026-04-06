@@ -9,42 +9,46 @@ os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
 _image_model = None
 
-def load_image_model(model_path=None):
+# Verified Absolute Path for this workspace
+IMAGE_MODEL_PATH = r"v:\Road2Tech\Project_3\Image and Audio Real or Fake Detection System\trained\novelty.h5"
+ALT_IMAGE_MODEL_PATH = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "trained", "novelty.h5")
+
+def load_image_model(model_path=IMAGE_MODEL_PATH):
     global _image_model
     if _image_model is None:
         try:
-            # Dynamically find the project root and trained folder
-            base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-            if model_path is None:
-                model_path = os.path.join(base_dir, 'trained', 'novelty.h5')
-            
+            # 1. Try Primary Path
             if not os.path.exists(model_path):
-                # Fallback check in current working directory just in case
-                if os.path.exists('trained/novelty.h5'):
-                    model_path = 'trained/novelty.h5'
-                elif os.path.exists('../trained/novelty.h5'):
-                    model_path = '../trained/novelty.h5'
+                alt = os.path.abspath(ALT_IMAGE_MODEL_PATH)
+                print(f"DEBUG: Image Model not found at {model_path}, trying {alt}...")
+                if os.path.exists(alt):
+                    model_path = alt
                 else:
-                    print(f"ERROR: Image Model file not found at {model_path}")
-                    return None
+                    # Final attempts in common relative locations
+                    if os.path.exists('trained/novelty.h5'):
+                        model_path = 'trained/novelty.h5'
+                    elif os.path.exists('../trained/novelty.h5'):
+                        model_path = '../trained/novelty.h5'
+                    else:
+                        print(f"CRITICAL ERROR: Image Model file not found anywhere!")
+                        return None
             
-            print(f"DEBUG: Loading IMAGE model strictly from: {model_path}")
+            print(f"DEBUG: Loading IMAGE model from: {model_path}")
             _image_model = tf.keras.models.load_model(model_path)
             
-            # CRITICAL SAFETY CHECK: Verify input shape
+            # Verify input shape to prevent audio/image mismatch
             input_shape = _image_model.input_shape
-            print(f"MODEL VERIFICATION: Input Shape = {input_shape}")
-            
             if len(input_shape) == 4 and input_shape[1] == 128:
-                 print("CRITICAL WARNING: The file novelty.h5 appears to be an AUDIO model, not an IMAGE model!")
+                 print("CRITICAL WARNING: The file novelty.h5 appears to be an AUDIO model!")
                  _image_model = None
                  return None
-                 
-            print(f"SUCCESS: Image model successfully loaded from: {model_path}")
+
+            print(f"SUCCESS: Image model loaded from: {model_path}")
         except Exception as e:
             print(f"CRITICAL ERROR loading image model: {e}")
             return None
     return _image_model
+
 
 
 
