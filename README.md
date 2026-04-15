@@ -31,7 +31,7 @@ A full-stack web application for detecting AI-generated and manipulated media (i
 └── trained/                # Pre-trained model weights (Download separately)
     ├── ffpp_c23.pth       # Xception model (Video - FaceForensics++)
     ├── audio_classifier.h5 # Audio detection model (TensorFlow)
-    └── novelty.h5          # Image detection model (TensorFlow CNN)
+    └── face_real_vs_ai_model.h5 # Image detection model (TensorFlow CNN)
 ```
 
 ## 📥 Download Pre-trained Models
@@ -46,7 +46,7 @@ After downloading, place the files in the `trained/` folder:
 trained/
 ├── ffpp_c23.pth        # Video detection (Xception)
 ├── audio_classifier.h5  # Audio detection
-└── novelty.h5          # Image detection
+└── face_real_vs_ai_model.h5 # Image detection
 ```
 
 ## 🚀 Quick Start
@@ -111,7 +111,7 @@ npm run dev
 - **Input**: 109-frame Mel-spectrograms (128 mel bins)
 
 ### Image Detection
-- **Model**: novelty.h5 (TensorFlow/Keras)
+- **Model**: face_real_vs_ai_model.h5 (TensorFlow/Keras)
 - **Architecture**: CNN Classifier
 - **Input Size**: 256x256 RGB images
 - **Output**: Binary classification (REAL/FAKE) with confidence score

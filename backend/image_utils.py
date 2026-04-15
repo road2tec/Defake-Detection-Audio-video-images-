@@ -10,8 +10,8 @@ os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 _image_model = None
 
 # Verified Absolute Path for this workspace
-IMAGE_MODEL_PATH = r"v:\Road2Tech\Project_3\Image and Audio Real or Fake Detection System\trained\novelty.h5"
-ALT_IMAGE_MODEL_PATH = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "trained", "novelty.h5")
+IMAGE_MODEL_PATH = r"v:\Road2Tech\Project_3\Image and Audio Real or Fake Detection System\trained\face_real_vs_ai_model.h5"
+ALT_IMAGE_MODEL_PATH = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "trained", "face_real_vs_ai_model.h5")
 
 def load_image_model(model_path=IMAGE_MODEL_PATH):
     global _image_model
@@ -48,11 +48,6 @@ def load_image_model(model_path=IMAGE_MODEL_PATH):
             print(f"CRITICAL ERROR loading image model: {e}")
             return None
     return _image_model
-
-
-
-
-
 
 def check_ai_watermark(image_path):
     """

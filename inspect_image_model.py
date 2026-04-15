@@ -1,7 +1,7 @@
 import tensorflow as tf
 import os
 
-model_path = 'trained/novelty.h5'
+model_path = 'trained/face_real_vs_ai_model.h5'
 if os.path.exists(model_path):
     try:
         model = tf.keras.models.load_model(model_path)
