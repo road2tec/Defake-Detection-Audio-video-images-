@@ -190,24 +190,49 @@ def predict_file(file: UploadFile = File(...), user_email: Optional[str] = None)
                  confidence = water_conf
              else:
                  # 2. Falling back to ML model if no metadata watermark found
-                 model = load_image_model()
-                 if model:
-                     print("Image Model loaded. Preprocessing...")
-                     img_tensor = preprocess_image(temp_filename)
-                     if img_tensor is not None:
-                         print(f"Image processed: {img_tensor.shape}. Predicting...")
-                         pred = model.predict(img_tensor)
-                         print(f"Prediction raw: {pred}")
+                 import os
+                 hf_token = os.getenv("HUGGINGFACE_API_TOKEN")
+                 if hf_token:
+                     print("Hugging Face API token found. Using Hugging Face InferenceClient...")
+                     try:
+                         from huggingface_hub import InferenceClient
+                         client = InferenceClient(token=hf_token)
+                         result = client.image_classification(temp_filename, model="dima806/deepfake_vs_real_image_detection")
+                         print(f"HF API Response: {result}")
+                         if result and len(result) > 0:
+                             top_pred = result[0]
+                             pred_label = getattr(top_pred, "label", None) or (top_pred.get("label", "") if isinstance(top_pred, dict) else "")
+                             pred_score = getattr(top_pred, "score", None) or (top_pred.get("score", 0.0) if isinstance(top_pred, dict) else 0.0)
+                             label = "REAL" if "real" in str(pred_label).lower() else "FAKE"
+                             confidence = float(pred_score)
+                         else:
+                             print(f"Unexpected HF API response format: {result}")
+                             return {"error": "hf_api_error", "detail": "Unexpected response from Hugging Face API"}
+                     except Exception as e:
+                         print(f"Error calling Hugging Face API: {e}")
+                         # Fallback to local model
+                         hf_token = None
                          
-                         # Assume binary sigmoid output [0=Fake, 1=Real] or similar
-                         score = float(pred[0][0]) if pred.shape[-1] == 1 else float(pred[0][1])
-                         confidence = score if score > 0.5 else 1 - score
-                         label = "REAL" if score > 0.5 else "FAKE"
-                         print(f"Result: {label} ({confidence})")
+                 # If HF token is not present or API failed, use local model
+                 if not hf_token:
+                     model = load_image_model()
+                     if model:
+                         print("Image Model loaded. Preprocessing...")
+                         img_tensor = preprocess_image(temp_filename)
+                         if img_tensor is not None:
+                             print(f"Image processed: {img_tensor.shape}. Predicting...")
+                             pred = model.predict(img_tensor)
+                             print(f"Prediction raw: {pred}")
+                             
+                             # Assume binary sigmoid output [0=Fake, 1=Real] or similar
+                             score = float(pred[0][0]) if pred.shape[-1] == 1 else float(pred[0][1])
+                             confidence = score if score > 0.5 else 1 - score
+                             label = "REAL" if score > 0.5 else "FAKE"
+                             print(f"Result: {label} ({confidence})")
+                         else:
+                             return {"error": "Could not process image"}
                      else:
-                         return {"error": "Could not process image"}
-                 else:
-                    return {"error": "model_load_failed", "detail": "Image detection model failed to load. Check trained/ folder."}
+                        return {"error": "model_load_failed", "detail": "Image detection model failed to load. Check trained/ folder."}
 
 
         
