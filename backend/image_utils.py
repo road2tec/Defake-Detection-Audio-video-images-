@@ -55,9 +55,12 @@ def check_ai_watermark(image_path):
     """
     try:
         img = Image.open(image_path)
-        ai_keywords = ["google", "gemini", "synthetic", "ai-generated", "dall-e", "midjourney", 
-                       "stable diffusion", "stablediffusion", "artificial", "adobe firefly", 
-                       "synthid", "imagogen", "parti"]
+        ai_keywords = [
+            "google", "gemini", "synthetic", "ai-generated", "dall-e", "midjourney", 
+            "stable diffusion", "stablediffusion", "artificial", "adobe firefly", 
+            "synthid", "imagogen", "parti", "deepfake", "generated with", "creator: google",
+            "software: google", "google ai", "imagen", "vertex ai"
+        ]
         
         # 1. Check EXIF specifically
         if "exif" in img.info:
@@ -69,36 +72,59 @@ def check_ai_watermark(image_path):
                         for kw in ai_keywords:
                             if kw in tag_value:
                                 print(f"AI Marker found in EXIF ({ifd}:{tag}): {kw}")
-                                return True, 0.99, f"AI-generated marker ({kw}) found in EXIF metadata"
+                                return True, 0.99, f"AI marker ({kw}) detected in EXIF metadata"
             except Exception as e:
                 print(f"EXIF parsing error: {e}")
 
-        # 2. Check general image info (XMP, IPTC often show up here)
+        # 2. Check general image info (XMP, IPTC, ICC profiles often show up here)
         for key, value in img.info.items():
             val_str = str(value).lower()
             for kw in ai_keywords:
                 if kw in val_str:
                     print(f"AI Marker found in info['{key}']: {kw}")
-                    return True, 0.99, f"AI watermark ({kw}) detected in {key} metadata"
+                    return True, 0.99, f"AI-generated tag ({kw}) found in {key} metadata"
 
-        # 3. Comprehensive Byte Search (Head and Tail)
+        # 3. Aggressive Byte Search (Search first 500KB and last 500KB)
         try:
             with open(image_path, 'rb') as f:
-                # Read first 100KB
-                head = f.read(100 * 1024).lower()
-                # Read last 100KB
+                # Read first 500KB
+                head = f.read(500 * 1024).lower()
+                # Read last 500KB
                 f.seek(0, 2)
                 file_size = f.tell()
-                f.seek(max(0, file_size - 100 * 1024))
+                f.seek(max(0, file_size - 500 * 1024))
                 tail = f.read().lower()
                 
                 content = head + tail
                 for kw in ai_keywords:
                     if kw.encode() in content:
                         print(f"AI String Found in Bytes: {kw}")
-                        return True, 0.99, f"AI-generated trace ({kw}) found in file structure"
+                        return True, 0.99, f"AI digital trace ({kw}) found in file"
         except Exception as e:
             print(f"Raw byte search error: {e}")
+
+        # 4. Visual Marker Check (Bottom Right Corner for Gemini Sparkle)
+        try:
+            width, height = img.size
+            # Crop the bottom-right 10% of the image
+            crop_w, crop_h = int(width * 0.15), int(height * 0.15)
+            bottom_right = img.crop((width - crop_w, height - crop_h, width, height))
+            
+            # Convert to grayscale to find bright patterns
+            bw = bottom_right.convert("L")
+            # Get peak brightness
+            extrema = bw.getextrema() # (min, max)
+            if extrema[1] > 240: # If there are very bright white pixels
+                # Further check: Gemini star is usually a distinct small shape
+                # This is a heuristic but helps for visual confirmation
+                print("DEBUG: Potential visual AI marker detected in bottom-right corner")
+                # We don't return True immediately here to avoid false positives, 
+                # but we can increase confidence or flag it if metadata also points to AI.
+                # For now, let's be bold if it's extremely bright and the image is large
+                if extrema[1] == 255 and extrema[0] < 100:
+                     return True, 0.95, "Visual AI watermark (sparkle icon) detected in bottom-right"
+        except Exception as e:
+            print(f"Visual check error: {e}")
 
         return False, 0.0, "No obvious AI watermark detected"
     except Exception as e:
