@@ -1,6 +1,5 @@
 import os
 import subprocess
-import re
 
 def kill_port(port):
     print(f"Looking for process on port {port}...")
@@ -33,4 +32,4 @@ def kill_port(port):
         print(f"Error: {e}")
 
 if __name__ == "__main__":
-    kill_port(8000)
+    kill_port(8001)

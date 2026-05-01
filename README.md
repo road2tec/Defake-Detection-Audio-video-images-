@@ -74,9 +74,8 @@ pip install -r requirements.txt
 echo "MONGO_URI=your_mongodb_connection_string" > .env
 
 # Run server
-python -m uvicorn main:app --reload --port 8080
+python -m uvicorn main:app --reload --port 8001
 ```
-
 ### Frontend Setup
 
 ```bash
@@ -92,7 +91,7 @@ npm run dev
 ### Access Application
 
 - **Frontend**: http://localhost:5173
-- **Backend API**: http://localhost:8080
+- **Backend API**: http://localhost:8001
 
 ## 🧠 Models Used
  
@@ -128,7 +127,7 @@ npm run dev
 ### Example Request
 
 ```bash
-curl -X POST "http://localhost:8080/predict" \
+curl -X POST "http://localhost:8001/predict" \
   -F "file=@video.mp4"
 ```
 

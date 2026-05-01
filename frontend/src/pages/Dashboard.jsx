@@ -24,7 +24,7 @@ const Dashboard = () => {
         formData.append('file', file);
 
         try {
-            const response = await fetch('http://127.0.0.1:8080/predict', {
+            const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/predict`, {
                 method: 'POST',
                 body: formData,
             });
@@ -54,7 +54,7 @@ const Dashboard = () => {
             setResult({
                 label: "OFFLINE",
                 confidence: 0,
-                errorDetail: "Ensure backend is running on port 8000."
+                errorDetail: "Ensure backend is running on port 8001."
             });
         } finally {
             setAnalyzing(false);
