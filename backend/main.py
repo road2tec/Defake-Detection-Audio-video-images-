@@ -188,7 +188,9 @@ def predict_file(file: UploadFile = File(...), user_email: Optional[str] = None)
                  print(f"Watermark Detection: {reason}")
                  label = "FAKE"
                  confidence = water_conf
+                 detection_detail = reason
              else:
+                 detection_detail = None
                  # 2. Falling back to ML model if no metadata watermark found
                  import os
                  hf_token = os.getenv("HUGGINGFACE_API_TOKEN")
@@ -265,6 +267,7 @@ def predict_file(file: UploadFile = File(...), user_email: Optional[str] = None)
         "label": label,
         "confidence": confidence,
         "content_type": content_type,
+        "detail": detection_detail if 'detection_detail' in locals() else None,
         "timestamp": datetime.datetime.utcnow().isoformat()
     }
 

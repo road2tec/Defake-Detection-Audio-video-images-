@@ -47,7 +47,8 @@ const Dashboard = () => {
 
             setResult({
                 label: data.label,
-                confidence: data.confidence
+                confidence: data.confidence,
+                detail: data.detail
             });
         } catch (error) {
             console.error("Error analyzing file:", error);
@@ -181,7 +182,14 @@ const Dashboard = () => {
                         {result.errorDetail ? (
                             <p style={{ color: '#fca5a5', maxWidth: '300px' }}>{result.errorDetail}</p>
                         ) : (
-                            <p style={{ color: 'var(--text-muted)' }}>Confidence: {(result.confidence * 100).toFixed(1)}%</p>
+                            <>
+                                <p style={{ color: 'var(--text-muted)' }}>Confidence: {(result.confidence * 100).toFixed(1)}%</p>
+                                {result.detail && (
+                                    <p style={{ color: '#6366f1', fontSize: '0.8rem', marginTop: '0.5rem' }}>
+                                        Note: {result.detail}
+                                    </p>
+                                )}
+                            </>
                         )}
                     </motion.div>
                 )}

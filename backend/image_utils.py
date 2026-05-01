@@ -51,40 +51,59 @@ def load_image_model(model_path=IMAGE_MODEL_PATH):
 
 def check_ai_watermark(image_path):
     """
-    Check for Gemini/Google AI watermarks in metadata or common AI markers.
-    Returns (is_fake, confidence, reason)
+    Check for Gemini/Google AI watermarks in metadata (EXIF, IPTC, XMP) or raw bytes.
     """
     try:
         img = Image.open(image_path)
+        ai_keywords = ["google", "gemini", "synthetic", "ai-generated", "dall-e", "midjourney", 
+                       "stable diffusion", "stablediffusion", "artificial", "adobe firefly", 
+                       "synthid", "imagogen", "parti"]
         
-        # Comprehensive list of AI-related keywords to flag
-        ai_keywords = ["google", "gemini", "synthetic", "ai-generated", "dall-e", "midjourney", "stable diffusion", "stablediffusion", "artificial", "adobe firefly", "synthid"]
-        
-        # 1. Search in image info (metadata like EXIF/IPTC)
-        info = img.info
-        if info:
-            metadata_str = str(info).lower()
-            for kw in ai_keywords:
-                if kw in metadata_str:
-                    print(f"AI Metadata Found: {kw}")
-                    return True, 0.99, f"AI watermark ({kw}) detected in metadata"
+        # 1. Check EXIF specifically
+        if "exif" in img.info:
+            try:
+                exif_dict = piexif.load(img.info["exif"])
+                for ifd in ("0th", "Exif", "GPS", "1st"):
+                    for tag in exif_dict[ifd]:
+                        tag_value = str(exif_dict[ifd][tag]).lower()
+                        for kw in ai_keywords:
+                            if kw in tag_value:
+                                print(f"AI Marker found in EXIF ({ifd}:{tag}): {kw}")
+                                return True, 0.99, f"AI-generated marker ({kw}) found in EXIF metadata"
+            except Exception as e:
+                print(f"EXIF parsing error: {e}")
 
-        # 2. String search in raw file content (binary headers/XMP packets)
+        # 2. Check general image info (XMP, IPTC often show up here)
+        for key, value in img.info.items():
+            val_str = str(value).lower()
+            for kw in ai_keywords:
+                if kw in val_str:
+                    print(f"AI Marker found in info['{key}']: {kw}")
+                    return True, 0.99, f"AI watermark ({kw}) detected in {key} metadata"
+
+        # 3. Comprehensive Byte Search (Head and Tail)
         try:
             with open(image_path, 'rb') as f:
-                # Read the start and end of the file where XMP/IPTC is usually stored
-                content = f.read(1024 * 50).lower() # First 50KB
+                # Read first 100KB
+                head = f.read(100 * 1024).lower()
+                # Read last 100KB
+                f.seek(0, 2)
+                file_size = f.tell()
+                f.seek(max(0, file_size - 100 * 1024))
+                tail = f.read().lower()
+                
+                content = head + tail
                 for kw in ai_keywords:
                     if kw.encode() in content:
-                        print(f"AI String Found in File Content: {kw}")
-                        return True, 0.99, f"AI-generated trace ({kw}) found in file"
+                        print(f"AI String Found in Bytes: {kw}")
+                        return True, 0.99, f"AI-generated trace ({kw}) found in file structure"
         except Exception as e:
             print(f"Raw byte search error: {e}")
 
         return False, 0.0, "No obvious AI watermark detected"
     except Exception as e:
         print(f"Watermark check error: {e}")
-        return False, 0.0, str(e)
+        return False, 0.0, f"Error: {str(e)}"
 
 
 def preprocess_image(file_path):
